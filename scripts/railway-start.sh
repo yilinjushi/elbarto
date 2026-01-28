@@ -5,9 +5,25 @@
 
 PORT=${PORT:-8080}
 
+# 设置状态目录（如果未设置，使用 /data/.clawdbot）
+if [ -z "$CLAWDBOT_STATE_DIR" ]; then
+  export CLAWDBOT_STATE_DIR="/data/.clawdbot"
+fi
+
+# 确保状态目录存在
+# Railway Volume 挂载到 /data，应该允许 node 用户写入
+# 如果无法创建，应用会使用默认位置（~/.clawdbot），但数据不会持久化
+if [ -n "$CLAWDBOT_STATE_DIR" ]; then
+  # 尝试创建目录（可能因为权限失败，但不影响应用启动）
+  mkdir -p "$CLAWDBOT_STATE_DIR" 2>/dev/null || {
+    echo "Warning: Could not create $CLAWDBOT_STATE_DIR, app will use default location"
+  }
+fi
+
 # 输出启动信息（用于调试）
 echo "Starting Moltbot Gateway on Railway..."
 echo "PORT=${PORT}"
+echo "CLAWDBOT_STATE_DIR=${CLAWDBOT_STATE_DIR}"
 echo "Health check endpoint: http://0.0.0.0:${PORT}/health"
 
 # 如果没有设置 GATEWAY_TOKEN，使用默认值（用户应通过 /setup 或环境变量设置）
@@ -18,5 +34,5 @@ if [ -z "$CLAWDBOT_GATEWAY_TOKEN" ]; then
   echo "Using default gateway token (set CLAWDBOT_GATEWAY_TOKEN env var to override)"
 fi
 
-# 启动应用
-exec node dist/index.js gateway --bind lan --port "$PORT" --allow-unconfigured
+# 启动应用（使用增加的内存限制）
+exec node --max-old-space-size=1024 dist/index.js gateway --bind lan --port "$PORT" --allow-unconfigured

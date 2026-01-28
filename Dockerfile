@@ -35,9 +35,17 @@ RUN chmod +x scripts/railway-start.sh
 
 ENV NODE_ENV=production
 
+# Prepare /data directory for Railway volume mount
+# Note: Railway volumes are mounted at runtime, so we can't set permissions here
+# The startup script will handle directory creation with proper permissions
+
 # Security hardening: Run as non-root user
 # The node:22-bookworm image includes a 'node' user (uid 1000)
 # This reduces the attack surface by preventing container escape via root privileges
 USER node
+
+# Increase Node.js memory limit for Railway (default is ~512MB, increase to 1GB)
+# This helps prevent "JavaScript heap out of memory" errors
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 CMD ["node", "dist/index.js"]
