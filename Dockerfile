@@ -30,6 +30,9 @@ ENV CLAWDBOT_PREFER_PNPM=1
 RUN pnpm ui:install
 RUN pnpm ui:build
 
+# Make Railway start script executable
+RUN chmod +x scripts/railway-start.sh
+
 ENV NODE_ENV=production
 
 # Security hardening: Run as non-root user
