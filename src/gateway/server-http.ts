@@ -232,16 +232,19 @@ export function createGatewayHttpServer(opts: {
       });
 
   async function handleRequest(req: IncomingMessage, res: ServerResponse) {
-    // Don't interfere with WebSocket upgrades; ws handles the 'upgrade' event.
-    if (String(req.headers.upgrade ?? "").toLowerCase() === "websocket") return;
-
     // Health check endpoint for Railway and other PaaS providers
+    // Must be checked early, before any other processing, to ensure quick response
+    // Railway uses healthcheck.railway.app as hostname, so we don't restrict by hostname
     if (req.url === "/health" && req.method === "GET") {
       res.statusCode = 200;
       res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache");
       res.end(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }));
       return;
     }
+
+    // Don't interfere with WebSocket upgrades; ws handles the 'upgrade' event.
+    if (String(req.headers.upgrade ?? "").toLowerCase() === "websocket") return;
 
     try {
       const configSnapshot = loadConfig();
