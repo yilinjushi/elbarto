@@ -3,7 +3,7 @@
 #   - SETUP_PASSWORD: 设置向导的密码
 #   - GEMINI_API_KEY: Google Gemini API 密钥
 #   - TELEGRAM_BOT_TOKEN: Telegram Bot Token（从 @BotFather 获取）
-#   - PORT: 8080
+#   - PORT: 8080（Railway 通常会自动设置，但建议手动设置）
 
 [build]
 builder = "dockerfile"
@@ -15,3 +15,6 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+
+# Railway 会自动处理网络配置，应用监听 PORT 环境变量即可
+# 如果部署后需要公开访问，在服务 Settings → Networking 中启用 Public Networking
