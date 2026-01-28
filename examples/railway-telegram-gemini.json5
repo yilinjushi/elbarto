@@ -1,0 +1,123 @@
+// Moltbot 配置示例：Telegram + Gemini 私人助理
+// 部署到 Railway 的推荐配置
+//
+// 环境变量（在 Railway 控制台设置）：
+//   GEMINI_API_KEY - Google Gemini API 密钥
+//   TELEGRAM_BOT_TOKEN - Telegram Bot Token
+//   SETUP_PASSWORD - 设置向导密码
+//   CLAWDBOT_STATE_DIR - /data/.clawdbot
+//   CLAWDBOT_WORKSPACE_DIR - /data/workspace
+//   PORT - 8080
+
+{
+  // 网关配置
+  gateway: {
+    mode: "local",
+    bind: "lan",
+    port: 8080
+  },
+
+  // 身份配置
+  identity: {
+    name: "Assistant",
+    language: "zh-CN",
+    persona: "你是一个乐于助人的私人 AI 助理。你使用中文回复用户，态度友好专业。"
+  },
+
+  // 模型配置 - 使用 Gemini
+  agents: {
+    defaults: {
+      model: {
+        primary: "google/gemini-3-pro-preview"
+      },
+      // 并发限制
+      maxConcurrent: 3,
+      // 上下文修剪
+      contextPruning: {
+        mode: "cache-ttl",
+        ttl: "1h"
+      },
+      // 心跳检查
+      heartbeat: {
+        every: "30m"
+      }
+    }
+  },
+
+  // 认证配置
+  auth: {
+    profiles: {
+      "google:default": {
+        provider: "google",
+        mode: "api_key"
+      }
+    },
+    order: {
+      google: ["google:default"]
+    }
+  },
+
+  // Telegram 通道配置
+  channels: {
+    telegram: {
+      enabled: true,
+      // Bot Token 从环境变量读取，或在此直接设置
+      // botToken: "YOUR_BOT_TOKEN_HERE",
+      
+      // DM 访问策略
+      // - "pairing": 需要配对码验证（推荐，更安全）
+      // - "allowlist": 仅允许列表中的用户
+      // - "open": 允许所有人（不推荐）
+      dmPolicy: "pairing",
+      
+      // 允许的用户 ID（使用 allowlist 策略时必填）
+      // allowFrom: ["YOUR_TELEGRAM_USER_ID"],
+      
+      // 群组策略
+      groupPolicy: "disabled",  // 禁用群组，仅作为私人助理
+      
+      // 消息格式
+      textChunkLimit: 4000,
+      
+      // 媒体限制（MB）
+      mediaMaxMb: 10,
+      
+      // 反应设置
+      reactionLevel: "ack",  // 处理时显示 👀
+      
+      // 命令
+      commands: {
+        native: true
+      }
+    }
+  },
+
+  // 消息配置
+  messages: {
+    // 群聊时需要 @mention
+    groupChat: {
+      requireMention: true
+    },
+    // 确认反应
+    ackReaction: "👀",
+    ackReactionScope: "group-mentions"
+  },
+
+  // 工具配置
+  tools: {
+    // 浏览器（可选，用于网页搜索等）
+    browser: {
+      enabled: false
+    },
+    // 代码执行（谨慎使用）
+    exec: {
+      enabled: false
+    }
+  },
+
+  // 日志配置
+  logging: {
+    level: "info",
+    redactSensitive: "tools"
+  }
+}
