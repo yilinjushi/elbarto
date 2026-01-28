@@ -44,8 +44,8 @@ ENV NODE_ENV=production
 # This reduces the attack surface by preventing container escape via root privileges
 USER node
 
-# Increase Node.js memory limit for Railway (default is ~512MB, increase to 1GB)
-# This helps prevent "JavaScript heap out of memory" errors
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+# Node.js memory limit can be set via NODE_OPTIONS environment variable in Railway
+# Default is set in startup script (2048MB), but Railway users should set it via env var
+# Example: NODE_OPTIONS=--max-old-space-size=4096
 
 CMD ["node", "dist/index.js"]

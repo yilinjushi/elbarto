@@ -4,6 +4,8 @@
 #   - GEMINI_API_KEY: Google Gemini API 密钥
 #   - TELEGRAM_BOT_TOKEN: Telegram Bot Token（从 @BotFather 获取）
 #   - PORT: 8080（Railway 通常会自动设置，但建议手动设置）
+#   - NODE_OPTIONS: --max-old-space-size=4096（推荐，防止内存不足错误）
+#   - CLAWDBOT_STATE_DIR: /data/.clawdbot（如果使用 Volume 挂载到 /data）
 
 [build]
 builder = "dockerfile"

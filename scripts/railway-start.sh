@@ -34,5 +34,15 @@ if [ -z "$CLAWDBOT_GATEWAY_TOKEN" ]; then
   echo "Using default gateway token (set CLAWDBOT_GATEWAY_TOKEN env var to override)"
 fi
 
-# 启动应用（使用增加的内存限制）
-exec node --max-old-space-size=1024 dist/index.js gateway --bind lan --port "$PORT" --allow-unconfigured
+# 设置 Node.js 内存限制（优先使用环境变量，否则使用默认值）
+# Railway 建议通过环境变量 NODE_OPTIONS 设置，更灵活
+# 如果未设置，使用 2GB 作为默认值（可以根据 Railway 资源调整）
+if [ -z "$NODE_OPTIONS" ]; then
+  export NODE_OPTIONS="--max-old-space-size=2048"
+  echo "Using default NODE_OPTIONS=${NODE_OPTIONS} (set NODE_OPTIONS env var to override)"
+else
+  echo "Using NODE_OPTIONS=${NODE_OPTIONS} from environment"
+fi
+
+# 启动应用
+exec node dist/index.js gateway --bind lan --port "$PORT" --allow-unconfigured

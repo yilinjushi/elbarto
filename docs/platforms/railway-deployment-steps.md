@@ -12,28 +12,49 @@
 2. 点击 **New Project** → **Deploy from GitHub repo**
 3. 选择你的仓库（`yilinjushi/elbarto`）
 
-### 2. 设置环境变量（部署前必须设置）
+### 2. 添加 Volume（推荐，用于数据持久化）
+
+**重要**：在设置环境变量之前，先添加 Volume：
+
+1. 在服务卡片上，点击 **+ New** → **Volume**
+2. 设置 **Mount Path** 为 `/data`
+3. 点击创建
+
+这样数据会持久化保存，重启不会丢失。
+
+### 3. 设置环境变量（部署前必须设置）
 
 在服务的 **Variables** 选项卡中，添加以下环境变量：
 
-| 变量名 | 值 | 说明 |
-|--------|------|------|
-| `PORT` | `8080` | Railway 可能自动设置，但建议手动设置 |
-| `SETUP_PASSWORD` | 你的密码 | 设置向导访问密码（必需） |
-| `GEMINI_API_KEY` | 你的密钥 | Google Gemini API 密钥（必需） |
-| `TELEGRAM_BOT_TOKEN` | 你的 Token | Telegram Bot Token（必需） |
-| `CLAWDBOT_GATEWAY_TOKEN` | 随机字符串 | Gateway 认证 token（可选，有默认值） |
+| 变量名 | 值 | 说明 | 必填 |
+|--------|------|------|------|
+| `PORT` | `8080` | Railway 可能自动设置，但建议手动设置 | 推荐 |
+| `SETUP_PASSWORD` | 你的密码 | 设置向导访问密码 | **必需** |
+| `GEMINI_API_KEY` | 你的密钥 | Google Gemini API 密钥 | **必需** |
+| `TELEGRAM_BOT_TOKEN` | 你的 Token | Telegram Bot Token | **必需** |
+| `NODE_OPTIONS` | `--max-old-space-size=4096` | Node.js 内存限制（防止内存不足错误） | **强烈推荐** |
+| `CLAWDBOT_STATE_DIR` | `/data/.clawdbot` | 状态目录（如果使用 Volume） | 推荐 |
+| `CLAWDBOT_GATEWAY_TOKEN` | 随机字符串 | Gateway 认证 token | 可选 |
+
+**关键环境变量说明：**
+
+- **`NODE_OPTIONS`**: 设置为 `--max-old-space-size=4096` 可以防止 "JavaScript heap out of memory" 错误。如果 Railway 分配的内存较小，可以设置为 `2048` 或 `3072`。
+- **`CLAWDBOT_STATE_DIR`**: 如果添加了 Volume 挂载到 `/data`，设置为 `/data/.clawdbot` 可以确保数据持久化。
 
 **如何获取 API 密钥：**
 
 - **Gemini API Key**: 访问 https://aistudio.google.com/ → Get API key
 - **Telegram Bot Token**: 在 Telegram 中搜索 `@BotFather` → `/newbot` → 复制 Token
 
-### 3. 首次部署
+### 4. 首次部署
 
 1. Railway 会自动检测代码更新并开始部署
 2. 等待构建和部署完成
 3. 如果健康检查失败，查看 **Deploy Logs** 排查问题
+
+**重要提示：**
+- 确保已设置 `NODE_OPTIONS` 环境变量，否则可能因内存不足而崩溃
+- 确保已添加 Volume 并设置 `CLAWDBOT_STATE_DIR`，否则数据不会持久化
 
 ## 第二步：部署成功后的配置
 
@@ -112,34 +133,64 @@ railway domain
 
 检查服务卡片上是否已经显示了域名。
 
-## 健康检查失败排查
+## 常见错误及解决方案
 
-如果健康检查失败，检查以下内容：
+### 错误 1：内存不足 (JavaScript heap out of memory)
 
-### 1. 查看部署日志
+**症状：**
+```
+FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+```
 
-在 **Deploy Logs** 中查找：
-- `Starting Moltbot Gateway on Railway...`
-- `PORT=8080`
-- `Health check endpoint: http://0.0.0.0:8080/health`
+**解决方案：**
+1. 在 Railway **Variables** 中添加：
+   - 变量名：`NODE_OPTIONS`
+   - 变量值：`--max-old-space-size=4096`
+2. 检查 Railway **Settings** → **Resources**，确保分配了足够的内存（至少 512MB，推荐 1GB+）
+3. 重新部署
 
-### 2. 检查端口监听
+### 错误 2：权限不足 (Permission denied)
 
-确保应用正确监听端口：
-- 日志中应该显示服务器已启动
-- 没有端口冲突错误
+**症状：**
+```
+Error: EACCES: permission denied, mkdir '/data/.clawdbot'
+```
 
-### 3. 检查环境变量
+**解决方案：**
 
-确保 `PORT` 环境变量已设置：
-- 在 **Variables** 中检查
-- 值应该是 `8080`（或 Railway 自动分配的值）
+**方法 A：添加 Volume（推荐）**
+1. 在服务中添加 Volume
+2. Mount Path 设置为 `/data`
+3. 在环境变量中设置 `CLAWDBOT_STATE_DIR=/data/.clawdbot`
+4. 重新部署
 
-### 4. 手动测试
+**方法 B：使用用户目录（临时方案）**
+如果无法使用 Volume，设置：
+- `CLAWDBOT_STATE_DIR=/home/node/.clawdbot`
+- 注意：数据不会持久化，重启会丢失
 
-部署成功后（即使健康检查失败），尝试：
-- 访问 `https://你的域名/health`（如果有域名）
-- 或使用 Railway 提供的临时 URL
+### 错误 3：健康检查失败
+
+**排查步骤：**
+
+1. **查看部署日志**
+   - 在 **Deploy Logs** 中查找：
+     - `Starting Moltbot Gateway on Railway...`
+     - `PORT=8080`
+     - `Health check endpoint: http://0.0.0.0:8080/health`
+
+2. **检查端口监听**
+   - 确保应用正确监听端口
+   - 日志中应该显示服务器已启动
+   - 没有端口冲突错误
+
+3. **检查环境变量**
+   - 确保 `PORT` 环境变量已设置
+   - 值应该是 `8080`（或 Railway 自动分配的值）
+
+4. **手动测试**
+   - 部署成功后，访问 `https://你的域名/health`
+   - 应该返回 `{"status":"ok","timestamp":"..."}`
 
 ## 常见问题
 
